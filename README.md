@@ -26,30 +26,41 @@ ls aa.txt
 mkdir test
 ```
 
-### rmdir
+### rmdir  ?
 ```
 rmdir test
 ```
 
-### put
+### put ?
 ```
 put aa.txt
 ```
 
-### get
+### get ?
+```
+get aa.txt
+```
 
-### cat
+### cat  ?
+```
+cat aa.txt
+```
 
-### status
+
+### status   
 ```
 status
 ```
 
 ### help
+```
+help
+```
 
-### exit and store img
-
-
+### exit and store img  ?
+```
+exit and store img
+```
 
 
 
