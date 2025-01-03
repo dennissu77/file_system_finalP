@@ -277,23 +277,23 @@ int read_file_to_fs(FileSystem *fs, const char *external_filename, const char *i
     return inode_index;
 }
 
-int write_file_to_host(FileSystem *fs, int inode_index, const char *external_filename) {
-    // Locate the file in the simulated file system
-
+int write_file_to_host(FileSystem *fs, int inode_index, const char *external_filename)
+{
+    // 取得模擬檔案系統裡的 inode
     Inode *inode = &fs->inodes[inode_index];
     if (inode->is_directory) {
         printf("'%s' is a directory, not a file.\n", inode->filename);
         return -1;
     }
 
-    // Open the external file for writing
+    // 以 "wb" 模式開啟(或建立)外部檔案
     FILE *file = fopen(external_filename, "wb");
     if (!file) {
         printf("Failed to create external file '%s'.\n", external_filename);
         return -1;
     }
 
-    // Write the file data from the simulated file system to the external file
+    // 將模擬檔案系統的資料寫入到 host 上的檔案
     size_t total_written = 0;
     size_t bytes_to_write = inode->size;
     uint8_t buffer[BLOCK_SIZE];
@@ -306,7 +306,7 @@ int write_file_to_host(FileSystem *fs, int inode_index, const char *external_fil
             return -1;
         }
 
-        // Determine how much to write from the current block
+        // 計算本次要寫入的區塊大小
         size_t chunk_size = (bytes_to_write > BLOCK_SIZE) ? BLOCK_SIZE : bytes_to_write;
         memcpy(buffer, fs->blocks[block_index].data, chunk_size);
         fwrite(buffer, 1, chunk_size, file);

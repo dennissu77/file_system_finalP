@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <sys/stat.h>   // mkdir 所需
+#include <sys/types.h>  // mkdir 所需
+
 #define MAX_INPUT_LENGTH 512
 #define MAX_PATH_LENGTH 512
 #define CAT_BUFFER_SIZE (BLOCK_SIZE * 4)
@@ -194,15 +197,27 @@ static void handle_put(FileSystemContext* ctx, char* arg1, char* arg2) {
     }
 }
 
-static void handle_get(FileSystemContext* ctx, char* arg1, char* arg2) {
+static void handle_get(FileSystemContext* ctx, char* arg1, char* arg2)
+{
     if (!arg1) {
         printf("Missing file name.\n");
         return;
     }
 
-    // If arg2 is not provided, use arg1 as the destination name
+    // 如果沒有指定 arg2，就用 arg1 做為外部檔名
     const char* dest_name = arg2 && *arg2 ? arg2 : arg1;
 
+    //==== (1) 檢查並建立 "dump" 目錄(資料夾) ====
+    // 如果 mkdir("dump", 0777) 回傳 -1，代表失敗；
+    // 若 errno == EEXIST，表示資料夾已經存在，可以忽略。
+    // 在真正使用前可再判斷 errno 做錯誤處理。
+    mkdir("dump", 0777);
+
+    //==== (2) 構建新的目的檔路徑: "dump/原始檔名" ====
+    char path_in_dump[1024];
+    snprintf(path_in_dump, sizeof(path_in_dump), "dump/%s", dest_name);
+
+    //==== (3) 在模擬檔案系統找出 arg1 這個檔名對應的 inode ====
     int found_file = -1;
     Inode* dir_inode = &ctx->fs->inodes[ctx->current_dir_inode];
     if (dir_inode->is_directory) {
@@ -215,8 +230,10 @@ static void handle_get(FileSystemContext* ctx, char* arg1, char* arg2) {
         }
     }
 
+    //==== (4) 如果找到檔案，就呼叫 write_file_to_host ====
     if (found_file != -1) {
-        if (write_file_to_host(ctx->fs, found_file, dest_name)) {
+        // 把「dump/檔名」傳給 write_file_to_host
+        if (write_file_to_host(ctx->fs, found_file, path_in_dump) > 0) {
             printf("File '%s' got successfully.\n", arg1);
         }
     } else {
