@@ -10,6 +10,10 @@
 #define MAX_PATH_LENGTH 512
 #define CAT_BUFFER_SIZE (BLOCK_SIZE * 4)
 
+
+//#define LOAD_IMG
+
+
 typedef struct {
     FileSystem* fs;
     int current_dir_inode;
@@ -310,51 +314,81 @@ static void process_command(FileSystemContext* ctx, const char* input) {
 
 int main() {
     FileSystem fs;
-    uint32_t num_blocks;
     FileSystemContext ctx;
+    uint32_t num_blocks;
 
-#ifndef LOAD_IMG
-    printf("Enter the number of blocks for the file system: ");
-    if (scanf("%u", &num_blocks) != 1 || num_blocks == 0) {
-        printf("Invalid input! Number of blocks must be a positive integer.\n");
+    // 讓使用者選擇要「載入檔案系統」或是「建立新檔案系統」
+    printf("選擇要進行的動作:\n");
+    printf("1. Loads from file\n");
+    printf("2. Create new partition in memory\n");
+    printf("請輸入選項 (1 or 2): ");
+
+    int choice;
+    if (scanf("%d", &choice) != 1) {
+        fprintf(stderr, "輸入無效，請重新執行程式。\n");
         return 1;
     }
 
-    // Clear input buffer
+    // 清空輸入緩衝區
     int c;
     while ((c = getchar()) != '\n' && c != EOF);
 
-    initialize_file_system(&fs, num_blocks);
-    int root_inode = create_directory(&fs, "root");
-    ctx.fs = &fs;
-    ctx.current_dir_inode = root_inode;
-#else
-    load_file_system(&fs, "disk_image.bin");
-    ctx.fs = &fs;
-    ctx.current_dir_inode = 0;
-#endif
+    if (choice == 1) {
+        // 使用者選擇載入現有檔案系統
+        load_file_system(&fs, "disk_image.bin");
+        // 假設載入的檔案系統根目錄 inode 為 0
+        ctx.fs = &fs;
+        ctx.current_dir_inode = 0;
+    } 
+    else if (choice == 2) {
+        // 使用者選擇在記憶體中建立新檔案系統
+        printf("Enter the number of blocks for the file system: ");
+        if (scanf("%u", &num_blocks) != 1 || num_blocks == 0) {
+            printf("Invalid input! Number of blocks must be a positive integer.\n");
+            return 1;
+        }
+
+        // 清空輸入緩衝區
+        while ((c = getchar()) != '\n' && c != EOF);
+
+        // 初始化檔案系統，並建立一個 root 目錄
+        initialize_file_system(&fs, num_blocks);
+        int root_inode = create_directory(&fs, "root");
+        ctx.fs = &fs;
+        ctx.current_dir_inode = root_inode;
+    } 
+    else {
+        printf("無效的選項，請重新執行程式。\n");
+        return 1;
+    }
 
     char input[MAX_INPUT_LENGTH];
     while (true) {
-        // Print prompt
+        // 印出目前所在的路徑
         char current_path[MAX_PATH_LENGTH];
-        get_inode_path(&fs, ctx.current_dir_inode, current_path, MAX_PATH_LENGTH);
+        get_inode_path(&fs, ctx.current_dir_inode, current_path, sizeof(current_path));
         printf("%s$ ", current_path);
-        
+
         if (fgets(input, sizeof(input), stdin) == NULL) {
-            break;
+            break;  // EOF or error
         }
 
+        // 如果輸入 "exit" 就離開
         if (strncmp(input, "exit", 4) == 0) {
-#ifndef LOAD_IMG
-            save_file_system(&fs, "disk_image.bin");
-#endif
+            // 如果是「記憶體中新建」的檔案系統，離開前可視需求決定是否要儲存
+            // 這裡假設都要存成 "disk_image.bin"
+            if (choice == 2) {
+                save_file_system(&fs, "disk_image.bin");
+            }
             break;
         }
 
+        // 處理指令
         process_command(&ctx, input);
     }
 
+    // 清理系統資源
     cleanup_file_system(&fs);
+
     return 0;
 }
