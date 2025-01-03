@@ -26,22 +26,22 @@ rm aa.txt
 mkdir test
 ```
 
-### rmdir  ?
+### rmdir  
 ```
 rmdir test
 ```
 
-### put ?
+### put 
 ```
 put aa.txt
 ```
 
-### get ?
+### get 
 ```
 get aa.txt
 ```
 
-### cat  ?
+### cat  
 ```
 cat aa.txt
 ```
