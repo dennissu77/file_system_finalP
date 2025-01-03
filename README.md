@@ -57,7 +57,7 @@ status
 help
 ```
 
-### exit and store img  ?
+### exit and store img  
 ```
 exit and store img
 ```
