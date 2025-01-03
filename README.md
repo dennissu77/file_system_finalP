@@ -65,8 +65,6 @@ exit and store img
 
 
 
-1.loads from file 
-2.create new partition in memory
 
 
 
